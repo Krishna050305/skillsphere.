@@ -388,7 +388,14 @@ GOOGLE_CLIENT_SECRET=
 ### `client/.env`
 ```env
 VITE_API_URL=http://localhost:5000/api
-VITE_SOCKET_URL=http://localhost:5000
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
+```
+
+### Production CORS Configuration
+For production deployment, ensure you configure the `CORS_ALLOWED_ORIGINS` environment variable on the server to explicitly allow your client application's domain.
+
+```env
+CORS_ALLOWED_ORIGINS=https://skillsphere.vercel.app,https://your-custom-domain.com
 ```
 
 ### `ml-service/.env`

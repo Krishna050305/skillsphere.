@@ -10,7 +10,7 @@ const notificationSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ['new_gig', 'proposal_accepted', 'payment_received', 'review_added', 'dispute_update'],
+    enum: ['new_gig', 'proposal_accepted', 'payment_received', 'review_added', 'dispute_update', 'milestone_reminder'],
     required: true,
   },
   payload: {

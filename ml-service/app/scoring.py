@@ -1,62 +1,71 @@
+import math
 import numpy as np
-from typing import List
-from app.schemas import CandidateProfile, JobDescription, CandidateScore
-from app.model import model_wrapper
 
-def cosine_similarity(v1, v2):
-    dot_product = np.dot(v1, v2)
-    norm_v1 = np.linalg.norm(v1)
-    norm_v2 = np.linalg.norm(v2)
-    if norm_v1 == 0 or norm_v2 == 0:
+# Scoring weight constants
+SEMANTIC_WEIGHT = 0.60
+RATING_WEIGHT = 0.25
+PROXIMITY_WEIGHT = 0.15
+
+def cosine_similarity(vec_a, vec_b) -> float:
+    """
+    Computes cosine similarity between two vectors using numpy.
+    """
+    a = np.array(vec_a)
+    b = np.array(vec_b)
+    dot = np.dot(a, b)
+    norm_a = np.linalg.norm(a)
+    norm_b = np.linalg.norm(b)
+    if norm_a == 0 or norm_b == 0:
         return 0.0
-    return float(dot_product / (norm_v1 * norm_v2))
+    return float(dot / (norm_a * norm_b))
 
-def calculate_match_scores(job: JobDescription, candidates: List[CandidateProfile]) -> List[CandidateScore]:
-    if not candidates:
-        return []
+def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Computes distance in kilometers between two geo-coordinate points.
+    """
+    # Earth radius in kilometers
+    R = 6371.0
 
-    # Get texts to embed
-    job_text = f"{job.description} {' '.join(job.required_skills)}"
-    candidate_texts = []
-    for c in candidates:
-        candidate_texts.append(f"{c.bio} {c.experience} {' '.join(c.skills)}")
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
 
-    # Get embeddings (using singleton wrapper)
-    all_texts = [job_text] + candidate_texts
-    embeddings = model_wrapper.get_embeddings(all_texts)
-    
-    job_emb = embeddings[0]
-    candidate_embs = embeddings[1:]
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
 
-    scores = []
-    for idx, candidate in enumerate(candidates):
-        # Calculate semantic cosine similarity
-        sem_score = cosine_similarity(job_emb, candidate_embs[idx])
-        
-        # Calculate skill overlap score
-        job_skills = set(s.lower() for s in job.required_skills)
-        cand_skills = set(s.lower() for s in candidate.skills)
-        
-        if job_skills:
-            overlap = job_skills.intersection(cand_skills)
-            skill_score = len(overlap) / len(job_skills)
-        else:
-            skill_score = 1.0
+    a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-        # Combine scores (70% semantic similarity, 30% skill overlap)
-        # Normalize sem_score from [-1, 1] to [0, 1]
-        normalized_sem = max(0.0, (sem_score + 1.0) / 2.0)
-        final_score = (normalized_sem * 0.7) + (skill_score * 0.3)
+    return R * c
 
-        # Build list of matched skills
-        matched = list(job_skills.intersection(cand_skills))
+def calculate_match_score(
+    semantic_similarity: float,
+    reputation_score: float,
+    distance_km: float | None,
+    is_remote_ok: bool
+) -> float:
+    """
+    Computes final recommendation score combining semantic, rating, and proximity signals.
+    """
+    # 1. Clamp semantic similarity to [0, 1]
+    clamped_semantic = max(0.0, min(1.0, semantic_similarity))
 
-        scores.append(CandidateScore(
-            candidate_id=candidate.id,
-            score=round(final_score, 4),
-            matched_skills=matched
-        ))
+    # 2. Normalize reputation score (0-5 scale)
+    normalized_rating = max(0.0, min(1.0, reputation_score / 5.0))
 
-    # Sort candidates by score in descending order
-    scores.sort(key=lambda x: x.score, reverse=True)
-    return scores
+    # 3. Calculate proximity score
+    if is_remote_ok:
+        proximity_score = 1.0
+    elif distance_km is not None:
+        # Distance decay formula: exp(-d / 25)
+        proximity_score = math.exp(-distance_km / 25.0)
+    else:
+        # If not remote-ok and distance is unavailable, score is 0
+        proximity_score = 0.0
+
+    final_score = (SEMANTIC_WEIGHT * clamped_semantic) + \
+                  (RATING_WEIGHT * normalized_rating) + \
+                  (PROXIMITY_WEIGHT * proximity_score)
+
+    return float(final_score)

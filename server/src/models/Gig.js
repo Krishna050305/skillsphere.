@@ -25,6 +25,17 @@ const milestoneSchema = new Schema({
     enum: ['pending', 'in_progress', 'submitted', 'approved', 'paid'],
     required: true,
   },
+  progressPercent: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+  },
+  progressLogs: [{
+    note: { type: String, trim: true, required: true },
+    fileUrl: { type: String },
+    at: { type: Date, default: Date.now }
+  }],
 });
 
 const attachmentSchema = new Schema({

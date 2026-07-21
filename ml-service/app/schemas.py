@@ -1,33 +1,29 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 
-class CandidateProfile(BaseModel):
-    id: str
-    skills: List[str]
-    experience: str
-    bio: Optional[str] = ""
-
-class JobDescription(BaseModel):
-    id: str
-    required_skills: List[str]
-    description: str
-
-class MatchRequest(BaseModel):
-    job: JobDescription
-    candidates: List[CandidateProfile]
-
-class CandidateScore(BaseModel):
-    candidate_id: str
-    score: float
-    matched_skills: List[str]
-
-class MatchResponse(BaseModel):
-    job_id: str
-    scores: List[CandidateScore]
-    timestamp: str
-
-class TextEmbeddingRequest(BaseModel):
+class EmbedRequest(BaseModel):
     text: str
 
-class TextEmbeddingResponse(BaseModel):
+class EmbedResponse(BaseModel):
     embedding: List[float]
+
+class MatchCandidate(BaseModel):
+    id: str
+    embedding: List[float]
+    reputation_score: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class MatchRequest(BaseModel):
+    target_embedding: List[float]
+    target_lat: Optional[float] = None
+    target_lon: Optional[float] = None
+    is_remote_ok: bool
+    candidates: List[MatchCandidate]
+
+class MatchResult(BaseModel):
+    id: str
+    score: float
+
+class MatchResponse(BaseModel):
+    results: List[MatchResult]

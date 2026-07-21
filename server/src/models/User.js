@@ -173,6 +173,10 @@ const freelancerProfileSchema = new Schema({
     type: Number,
     default: 0,
   },
+  profileViews: {
+    type: Number,
+    default: 0,
+  },
 }, { _id: false });
 
 const clientProfileSchema = new Schema({

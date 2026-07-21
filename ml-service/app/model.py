@@ -1,54 +1,53 @@
 import os
 import numpy as np
 
-# Try to import sentence_transformers, with fallback to mock if import fails
+# Load the sentence-transformers model "all-MiniLM-L6-v2" ONCE at module import time
 try:
     from sentence_transformers import SentenceTransformer
     HAS_SENTENCE_TRANSFORMERS = True
 except ImportError:
     HAS_SENTENCE_TRANSFORMERS = False
 
+MODEL_NAME = "all-MiniLM-L6-v2"
+
+# Set caching directory to workspace to avoid re-downloading to temp paths
+os.environ["HF_HOME"] = os.path.join(os.path.dirname(__file__), "..", ".hf_cache")
+
 class MockEmbeddingModel:
     def __init__(self):
         print("Using MockEmbeddingModel as fallback.")
 
-    def encode(self, sentences, show_progress_bar=False):
-        # Generate stable mock embeddings based on text length and character sums
-        embeddings = []
-        for text in sentences:
-            np.random.seed(sum(ord(c) for c in text) % 2**32)
-            # Create a mock 384-dimensional vector (dimension of all-MiniLM-L6-v2)
-            vec = np.random.randn(384)
-            # Normalize vector
-            vec = vec / np.linalg.norm(vec)
-            embeddings.append(vec.tolist())
-        return np.array(embeddings)
+    def encode(self, text: str) -> np.ndarray:
+        # Generate stable mock embeddings based on text characters
+        np.random.seed(sum(ord(c) for c in text) % 2**32)
+        vec = np.random.randn(384)
+        norm = np.linalg.norm(vec)
+        if norm > 0:
+            vec = vec / norm
+        return vec
 
-class EmbeddingModelWrapper:
-    def __init__(self):
-        self.model = None
-        self.model_name = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
-        self.use_mock = os.getenv("USE_MOCK_ML", "false").lower() == "true"
+# Load model at import time
+model = None
+if HAS_SENTENCE_TRANSFORMERS:
+    try:
+        print(f"Preloading sentence-transformer model '{MODEL_NAME}'...")
+        model = SentenceTransformer(MODEL_NAME)
+        print("Model preloaded successfully.")
+    except Exception as e:
+        print(f"Error loading model: {e}. Falling back to mock model.")
+        model = MockEmbeddingModel()
+else:
+    model = MockEmbeddingModel()
 
-    def load_model(self):
-        if self.use_mock or not HAS_SENTENCE_TRANSFORMERS:
-            self.model = MockEmbeddingModel()
-            return
-
-        try:
-            print(f"Loading sentence-transformer model: {self.model_name}...")
-            # Set caching directory to workspace to avoid re-downloading
-            os.environ["HF_HOME"] = os.path.join(os.path.dirname(__file__), "..", ".hf_cache")
-            self.model = SentenceTransformer(self.model_name)
-            print("Model loaded successfully.")
-        except Exception as e:
-            print(f"Error loading model: {e}. Falling back to mock model.")
-            self.model = MockEmbeddingModel()
-
-    def get_embeddings(self, texts):
-        if self.model is None:
-            self.load_model()
-        return self.model.encode(texts, show_progress_bar=False)
-
-# Singleton instance
-model_wrapper = EmbeddingModelWrapper()
+def embed_text(text: str) -> list[float]:
+    """
+    Returns the 384-dimensional embedding vector for the given text as a plain Python list of floats.
+    """
+    if isinstance(model, MockEmbeddingModel):
+        embedding = model.encode(text)
+    else:
+        embedding = model.encode(text, show_progress_bar=False)
+    
+    if hasattr(embedding, "tolist"):
+        return embedding.tolist()
+    return [float(x) for x in embedding]
