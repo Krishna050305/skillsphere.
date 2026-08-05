@@ -185,6 +185,25 @@ const clientProfileSchema = new Schema({
     maxlength: 100,
     trim: true,
   },
+  tagline: {
+    type: String,
+    maxlength: 150,
+    trim: true,
+  },
+  industry: {
+    type: String,
+    maxlength: 100,
+    trim: true,
+  },
+  website: {
+    type: String,
+    trim: true,
+  },
+  companySize: {
+    type: String,
+    enum: ['1-10', '11-50', '51-200', '201-500', '500+'],
+    default: '1-10',
+  },
   about: {
     type: String,
     trim: true,

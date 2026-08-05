@@ -127,12 +127,22 @@ export async function getGigs(req, res, next) {
       radius,
       search,
       sortBy = 'newest',
+      client,
     } = req.query;
 
     const query = {};
 
-    // 1. Status filter (default to open)
-    query.status = status || 'open';
+    // 1. Status filter (default to open, 'all' skips status filter)
+    if (status && status !== 'all') {
+      query.status = status;
+    } else if (!status) {
+      query.status = 'open';
+    }
+
+    // 1b. Client filter
+    if (client) {
+      query.client = client;
+    }
 
     // 2. Skill tag matching (case-insensitive array check)
     if (skill) {

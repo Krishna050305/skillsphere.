@@ -46,7 +46,7 @@ export const updateMe = async (req, res) => {
           user.clientProfile = {};
         }
 
-        const allowedFields = ['companyName', 'about'];
+        const allowedFields = ['companyName', 'tagline', 'industry', 'website', 'companySize', 'about'];
 
         for (const field of allowedFields) {
           if (req.body.clientProfile[field] !== undefined) {

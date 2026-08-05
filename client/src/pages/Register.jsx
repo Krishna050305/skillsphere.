@@ -1,24 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { register, isAuthenticated, error, loading, clearError } = useAuth();
+
+  const roleParam = searchParams.get('role');
+  const currentRole = (roleParam === 'freelancer' || roleParam === 'client') ? roleParam : null;
+
+  // Local component state for role selection in Step 1
+  const [selectedRole, setSelectedRole] = useState(currentRole || 'freelancer');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState('freelancer'); // Default role
   const [validationError, setValidationError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Clear errors when navigating away
+  // Clear errors when navigating away or changing role
   useEffect(() => {
     clearError();
     setValidationError('');
-  }, [clearError]);
+  }, [clearError, currentRole]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -27,11 +33,33 @@ export default function Register() {
     }
   }, [isAuthenticated, navigate]);
 
+  // Keep selectedRole synced if URL query param changes
+  useEffect(() => {
+    if (currentRole) {
+      setSelectedRole(currentRole);
+    }
+  }, [currentRole]);
+
+  const handleSelectAndProceed = (role) => {
+    setSelectedRole(role);
+    setSearchParams({ role });
+  };
+
+  const handleCardClick = (role) => {
+    if (selectedRole === role) {
+      handleSelectAndProceed(role);
+    } else {
+      setSelectedRole(role);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setValidationError('');
 
-    if (!name || !email || !password || !role) {
+    const activeRole = currentRole || selectedRole;
+
+    if (!name || !email || !password || !activeRole) {
       setValidationError('Please fill in all required fields.');
       return;
     }
@@ -61,7 +89,7 @@ export default function Register() {
       name,
       email,
       password,
-      role,
+      role: activeRole,
       phone: phone || undefined,
     };
 
@@ -71,6 +99,209 @@ export default function Register() {
     }
   };
 
+  // STEP 1 — Role Selection Screen (shown first, when no valid role param is in URL)
+  if (!currentRole) {
+    return (
+      <div className="min-h-screen flex flex-col justify-between p-6 md:p-12 relative overflow-hidden" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        {/* Background glow effects matching brand theme */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl opacity-20 pointer-events-none" style={{ background: 'var(--gradient-brand)' }} />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full blur-3xl opacity-15 pointer-events-none" style={{ background: 'var(--gradient-gold)' }} />
+
+        {/* Top Header / Branding */}
+        <div className="w-full max-w-5xl mx-auto flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: 'var(--gradient-brand)' }}>
+              <span className="text-xl font-black text-white font-display">S</span>
+            </div>
+            <div>
+              <span className="text-xl font-bold tracking-tight font-display" style={{ color: 'var(--accent-primary)' }}>
+                Skill<span style={{ color: 'var(--accent-secondary)' }}>Sphere</span>
+              </span>
+              <span className="text-[9px] block font-mono tracking-[0.2em] uppercase" style={{ color: 'var(--text-muted)' }}>Hyperlocal Freelance</span>
+            </div>
+          </div>
+          <Link to="/login" className="text-xs font-mono tracking-wider uppercase hover:underline" style={{ color: 'var(--text-tertiary)' }}>
+            Log in →
+          </Link>
+        </div>
+
+        {/* Main Step 1 Role Selection Content */}
+        <div className="my-auto py-8 w-full max-w-4xl mx-auto relative z-10 text-center">
+          <span className="text-xs uppercase font-mono tracking-widest px-3.5 py-1 rounded-full inline-block mb-4" style={{ background: 'rgba(26,107,75,0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(26,107,75,0.2)' }}>
+            Step 1 of 2 — Account Type
+          </span>
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>
+            How do you plan to use <span style={{ color: 'var(--accent-primary)' }}>Skill</span><span style={{ color: 'var(--accent-secondary)' }}>Sphere</span>?
+          </h1>
+          <p className="mt-3 text-sm md:text-base max-w-xl mx-auto" style={{ color: 'var(--text-tertiary)' }}>
+            Select your primary role to customize your workspace experience.
+          </p>
+
+          {/* Role Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 text-left">
+            {/* Card 1 — Freelancer */}
+            <div
+              onClick={() => handleCardClick('freelancer')}
+              className="relative rounded-2xl p-6 md:p-8 cursor-pointer transition-all duration-300 flex flex-col justify-between group"
+              style={{
+                background: selectedRole === 'freelancer' ? 'var(--bg-tertiary)' : 'var(--bg-card)',
+                border: selectedRole === 'freelancer' ? '2px solid var(--accent-primary)' : '1px solid var(--border-primary)',
+                boxShadow: selectedRole === 'freelancer' ? '0 12px 35px rgba(26,107,75,0.15)' : 'var(--shadow-card)',
+              }}
+            >
+              {/* Checkmark Badge */}
+              <div className="absolute top-5 right-5">
+                {selectedRole === 'freelancer' ? (
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md animate-fade-in-up" style={{ background: 'var(--accent-primary)' }}>
+                    ✓
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-700 group-hover:border-slate-400"></div>
+                )}
+              </div>
+
+              <div>
+                {/* Icon */}
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md transition-transform group-hover:scale-105" style={{ background: 'rgba(26,107,75,0.12)', color: 'var(--accent-primary)', border: '1px solid rgba(26,107,75,0.2)' }}>
+                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+
+                {/* Headline & Subtitle */}
+                <h2 className="text-2xl font-bold font-display" style={{ color: 'var(--text-primary)' }}>
+                  I'm a Freelancer
+                </h2>
+                <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                  Offer your skills, find local gigs, and grow your reputation
+                </p>
+
+                {/* Bullets */}
+                <ul className="mt-6 space-y-3 text-xs md:text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  <li className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'rgba(26,107,75,0.15)', color: 'var(--accent-primary)' }}>✓</span>
+                    Find hyperlocal gigs
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'rgba(26,107,75,0.15)', color: 'var(--accent-primary)' }}>✓</span>
+                    Build a verified portfolio
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'rgba(26,107,75,0.15)', color: 'var(--accent-primary)' }}>✓</span>
+                    Get paid via secure milestones
+                  </li>
+                </ul>
+              </div>
+
+              {/* CTA */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectAndProceed('freelancer');
+                }}
+                className={`mt-8 w-full py-3.5 px-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                  selectedRole === 'freelancer'
+                    ? 'btn-primary shadow-lg shadow-emerald-600/20'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span>Continue as Freelancer</span>
+                <span className="text-lg">→</span>
+              </button>
+            </div>
+
+            {/* Card 2 — Client */}
+            <div
+              onClick={() => handleCardClick('client')}
+              className="relative rounded-2xl p-6 md:p-8 cursor-pointer transition-all duration-300 flex flex-col justify-between group"
+              style={{
+                background: selectedRole === 'client' ? 'var(--bg-tertiary)' : 'var(--bg-card)',
+                border: selectedRole === 'client' ? '2px solid var(--accent-secondary)' : '1px solid var(--border-primary)',
+                boxShadow: selectedRole === 'client' ? '0 12px 35px rgba(201,162,39,0.15)' : 'var(--shadow-card)',
+              }}
+            >
+              {/* Checkmark Badge */}
+              <div className="absolute top-5 right-5">
+                {selectedRole === 'client' ? (
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-slate-900 text-xs font-bold shadow-md animate-fade-in-up" style={{ background: 'var(--accent-secondary)' }}>
+                    ✓
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-700 group-hover:border-slate-400"></div>
+                )}
+              </div>
+
+              <div>
+                {/* Icon */}
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md transition-transform group-hover:scale-105" style={{ background: 'rgba(201,162,39,0.12)', color: 'var(--accent-secondary)', border: '1px solid rgba(201,162,39,0.2)' }}>
+                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h4m-4 0V11m0 0V8m0 3h4m-4 0H9m4 0v4m0 0h4m-4 0H9" />
+                  </svg>
+                </div>
+
+                {/* Headline & Subtitle */}
+                <h2 className="text-2xl font-bold font-display" style={{ color: 'var(--text-primary)' }}>
+                  I'm a Client
+                </h2>
+                <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                  Post projects, hire verified local talent, and pay securely
+                </p>
+
+                {/* Bullets */}
+                <ul className="mt-6 space-y-3 text-xs md:text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  <li className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'rgba(201,162,39,0.15)', color: 'var(--accent-secondary)' }}>✓</span>
+                    Post gigs instantly
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'rgba(201,162,39,0.15)', color: 'var(--accent-secondary)' }}>✓</span>
+                    AI-matched candidates
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'rgba(201,162,39,0.15)', color: 'var(--accent-secondary)' }}>✓</span>
+                    Milestone-based payments
+                  </li>
+                </ul>
+              </div>
+
+              {/* CTA */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectAndProceed('client');
+                }}
+                className={`mt-8 w-full py-3.5 px-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                  selectedRole === 'client'
+                    ? 'btn-gold shadow-lg shadow-amber-500/20'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span>Continue as Client</span>
+                <span className="text-lg">→</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Already have an account link visible on Step 1 */}
+          <p className="text-center text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold hover:underline" style={{ color: 'var(--accent-primary)' }}>
+              Log in
+            </Link>
+          </p>
+        </div>
+
+        {/* Footer Credit */}
+        <div className="text-center text-xs font-mono relative z-10" style={{ color: 'var(--text-muted)' }}>
+          © 2026 SkillSphere. All rights reserved.
+        </div>
+      </div>
+    );
+  }
+
+  // STEP 2 — Registration Form (shown when role is selected)
   return (
     <div className="min-h-screen flex flex-col md:flex-row" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       {/* Brand Panel */}
@@ -121,7 +352,7 @@ export default function Register() {
               <div className="mx-auto w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center text-3xl text-emerald-400 mb-6 animate-bounce">
                 ✉
               </div>
-              <h2 className="text-3xl font-extrabold tracking-tight">Check your email</h2>
+              <h2 className="text-3xl font-extrabold tracking-tight font-display">Check your email</h2>
               <p className="text-slate-400 mt-4 leading-relaxed">
                 We've sent a verification link to <span className="text-indigo-400 font-semibold">{email}</span>.
                 Please verify your email address to activate your account.
@@ -133,7 +364,7 @@ export default function Register() {
                 </div>
                 <Link
                   to="/login"
-                  className="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-md shadow-indigo-600/10 hover:shadow-indigo-500/30 w-full"
+                  className="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-md shadow-indigo-600/10 hover:shadow-indigo-500/30 w-full text-center"
                 >
                   Proceed to Login
                 </Link>
@@ -142,11 +373,37 @@ export default function Register() {
           ) : (
             /* Standard Registration Form */
             <>
+              {/* Selected Role Badge / Pill at Top of Form */}
+              <div className="flex items-center justify-between p-3.5 rounded-xl mb-6" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)' }}>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xs font-mono uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Role:</span>
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+                    style={
+                      currentRole === 'client'
+                        ? { background: 'rgba(201, 162, 39, 0.15)', color: 'var(--accent-secondary)', border: '1px solid rgba(201, 162, 39, 0.3)' }
+                        : { background: 'rgba(26, 107, 75, 0.15)', color: 'var(--accent-primary)', border: '1px solid rgba(26, 107, 75, 0.3)' }
+                    }
+                  >
+                    <span className={`w-2 h-2 rounded-full ${currentRole === 'client' ? 'bg-amber-400' : 'bg-emerald-500'} animate-pulse`}></span>
+                    Registering as {currentRole === 'client' ? 'Client' : 'Freelancer'} 🟢
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSearchParams({})}
+                  className="text-xs font-semibold hover:underline transition-colors"
+                  style={{ color: 'var(--accent-primary)' }}
+                >
+                  Change
+                </button>
+              </div>
+
               {/* Header */}
               <div className="text-center md:text-left mb-6">
-                <h2 className="text-3xl font-extrabold tracking-tight">Get Started</h2>
-                <p className="text-slate-400 mt-2">
-                  Create your profile and explore opportunities today.
+                <h2 className="text-3xl font-extrabold tracking-tight font-display">Create Account</h2>
+                <p className="text-slate-400 mt-2 text-sm">
+                  Complete your details below to set up your {currentRole === 'client' ? 'Client' : 'Freelancer'} profile.
                 </p>
               </div>
 
@@ -163,37 +420,6 @@ export default function Register() {
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Role Switcher */}
-                <div>
-                  <label className="block text-xs uppercase font-mono tracking-wider text-slate-400 mb-2">
-                    I want to sign up as a:
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setRole('freelancer')}
-                      className={`py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
-                        role === 'freelancer'
-                          ? 'bg-indigo-600/10 border-indigo-500 text-indigo-400'
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                      }`}
-                    >
-                      Freelancer
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole('client')}
-                      className={`py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
-                        role === 'client'
-                          ? 'bg-indigo-600/10 border-indigo-500 text-indigo-400'
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                      }`}
-                    >
-                      Client
-                    </button>
-                  </div>
-                </div>
-
                 {/* Name */}
                 <div>
                   <label htmlFor="name" className="block text-xs uppercase font-mono tracking-wider text-slate-400 mb-2">
@@ -320,3 +546,4 @@ export default function Register() {
     </div>
   );
 }
+
