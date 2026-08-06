@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getNotifications, markAsRead, markAllAsRead } from '../../api/notifications.api.js';
 import useSocket from '../../hooks/useSocket.js';
+import { IconBell, IconBriefcase, IconCheck, IconDollar, IconStar, IconAlert, IconMessage, IconGift } from '../icons';
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
@@ -85,42 +86,42 @@ export default function NotificationBell() {
     switch (n.type) {
       case 'new_gig':
         return {
-          icon: '💼',
+          icon: <IconBriefcase className="w-5 h-5" style={{ color: 'var(--accent-primary)' }} />,
           title: 'New Gig Match',
           desc: n.payload?.title ? `A new matching gig "${n.payload.title}" is available!` : 'A new matching gig has been posted.',
           color: 'text-indigo-400 bg-indigo-500/10'
         };
       case 'proposal_accepted':
         return {
-          icon: '🎉',
+          icon: <IconGift className="w-5 h-5" style={{ color: 'var(--accent-primary)' }} />,
           title: 'Proposal Accepted',
           desc: n.payload?.gigTitle ? `Your proposal for "${n.payload.gigTitle}" was accepted!` : 'Your proposal has been accepted!',
           color: 'text-emerald-400 bg-emerald-500/10'
         };
       case 'payment_received':
         return {
-          icon: '💵',
+          icon: <IconDollar className="w-5 h-5" style={{ color: 'var(--accent-primary)' }} />,
           title: 'Payment Received',
           desc: n.payload?.amount ? `Received milestone payment of $${n.payload.amount}!` : 'You received a payment!',
           color: 'text-teal-400 bg-teal-500/10'
         };
       case 'review_added':
         return {
-          icon: '⭐',
+          icon: <IconStar className="w-5 h-5" style={{ color: 'var(--accent-primary)' }} />,
           title: 'New Review Added',
           desc: `${n.payload?.reviewerName || 'A client'} left you a ${n.payload?.rating}-star review!`,
           color: 'text-amber-400 bg-amber-500/10'
         };
       case 'dispute_update':
         return {
-          icon: '⚠️',
+          icon: <IconAlert className="w-5 h-5" style={{ color: 'var(--accent-primary)' }} />,
           title: 'Dispute Update',
           desc: 'An update was posted regarding your active dispute.',
           color: 'text-rose-400 bg-rose-500/10'
         };
       default:
         return {
-          icon: '🔔',
+          icon: <IconBell className="w-5 h-5" style={{ color: 'var(--accent-primary)' }} />,
           title: 'Notification',
           desc: n.payload?.message || 'You have a new update.',
           color: 'text-slate-400 bg-slate-500/10'
@@ -137,9 +138,7 @@ export default function NotificationBell() {
         className="relative p-2 text-slate-400 hover:text-indigo-400 bg-slate-800/40 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 rounded-xl transition-all duration-200 cursor-pointer"
         aria-label="View notifications"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5.5 w-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
+        <IconBell className="h-5.5 w-5.5" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[9px] font-bold text-white ring-2 ring-slate-900 animate-pulse">
             {unreadCount}

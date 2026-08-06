@@ -13,6 +13,7 @@ export default function Messages() {
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const [loadingThreads, setLoadingThreads] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { emit, on } = useSocket();
 
@@ -23,13 +24,13 @@ export default function Messages() {
       const data = await getConversations();
       if (data.success) {
         setConversations(data.conversations || []);
-        
-        // If autoSelectId is provided or activeConversation exists, sync the active thread details
         if (autoSelectId) {
-          const matched = data.conversations.find(c => c.conversationId === autoSelectId);
+          const matched = data.conversations.find((c) => c.conversationId === autoSelectId);
           if (matched) setActiveConversation(matched);
         } else if (activeConversation) {
-          const matched = data.conversations.find(c => c.conversationId === activeConversation.conversationId);
+          const matched = data.conversations.find(
+            (c) => c.conversationId === activeConversation.conversationId
+          );
           if (matched) setActiveConversation(matched);
         }
       }
@@ -49,9 +50,7 @@ export default function Messages() {
     setLoadingMessages(true);
     try {
       const data = await getMessagesForConversation(conversationId, 1, 100);
-      if (data.success) {
-        setMessages(data.messages || []);
-      }
+      if (data.success) setMessages(data.messages || []);
     } catch (err) {
       console.error('Error loading messages:', err);
     } finally {
@@ -62,59 +61,38 @@ export default function Messages() {
   useEffect(() => {
     if (activeConversation) {
       loadMessages(activeConversation.conversationId);
-      
-      // Emit message read status to the sender of the conversation
       emit('message:read', {
         conversationId: activeConversation.conversationId,
-        senderId: activeConversation.otherParticipant._id
+        senderId: activeConversation.otherParticipant._id,
       });
-
-      // Clear typing indicator for safety
       setIsOtherUserTyping(false);
     }
   }, [activeConversation]);
 
-  // 3. Listen to Socket events
+  // 3. Socket listeners
   useEffect(() => {
-    // A. Receive message
-    const unsubscribeReceive = on('message:receive', (msg) => {
-      console.log('Received message:', msg);
-      
+    const unsubReceive = on('message:receive', (msg) => {
       const currentActiveId = activeConversation?.conversationId;
-      const isForActiveChat = msg.conversationId === currentActiveId;
-
-      if (isForActiveChat) {
-        // Append message to active chat
+      if (msg.conversationId === currentActiveId) {
         setMessages((prev) => [...prev, msg]);
-
-        // If I am the recipient, automatically read it
         if (msg.recipient._id.toString() === currentUser?._id?.toString()) {
-          emit('message:read', {
-            conversationId: currentActiveId,
-            senderId: msg.sender._id
-          });
+          emit('message:read', { conversationId: currentActiveId, senderId: msg.sender._id });
         }
       }
-
-      // Re-fetch conversation list to update previews and unread counts
       loadConversations();
     });
 
-    // B. Typing status
-    const unsubscribeTyping = on('message:typing', (data) => {
-      const { senderId, isTyping } = data;
-      // Show typing indicator only if typing sender is the active conversation's other participant
-      if (activeConversation && activeConversation.otherParticipant._id.toString() === senderId.toString()) {
+    const unsubTyping = on('message:typing', ({ senderId, isTyping }) => {
+      if (
+        activeConversation &&
+        activeConversation.otherParticipant._id.toString() === senderId.toString()
+      ) {
         setIsOtherUserTyping(isTyping);
       }
     });
 
-    // C. Read acknowledgements
-    const unsubscribeReadAck = on('message:read:ack', (data) => {
-      const { conversationId, readerId, readAt } = data;
-      
-      // If the ack is for the currently active conversation, update message read statuses
-      if (activeConversation && activeConversation.conversationId === conversationId) {
+    const unsubReadAck = on('message:read:ack', ({ conversationId, readerId, readAt }) => {
+      if (activeConversation?.conversationId === conversationId) {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.sender._id.toString() === currentUser?._id?.toString() && !msg.readAt
@@ -123,151 +101,204 @@ export default function Messages() {
           )
         );
       }
-
-      // Sync conversation list statuses
       setConversations((prev) =>
         prev.map((c) => {
-          if (c.conversationId === conversationId) {
-            return {
-              ...c,
-              unreadCount: readerId.toString() === currentUser?._id?.toString() ? 0 : c.unreadCount,
-              lastMessage: {
-                ...c.lastMessage,
-                readAt: c.lastMessage.recipient.toString() === readerId.toString() ? readAt : c.lastMessage.readAt
-              }
-            };
-          }
-          return c;
+          if (c.conversationId !== conversationId) return c;
+          return {
+            ...c,
+            unreadCount:
+              readerId.toString() === currentUser?._id?.toString() ? 0 : c.unreadCount,
+            lastMessage: {
+              ...c.lastMessage,
+              readAt:
+                c.lastMessage.recipient?.toString() === readerId.toString()
+                  ? readAt
+                  : c.lastMessage.readAt,
+            },
+          };
         })
       );
     });
 
     return () => {
-      if (unsubscribeReceive) unsubscribeReceive();
-      if (unsubscribeTyping) unsubscribeTyping();
-      if (unsubscribeReadAck) unsubscribeReadAck();
+      if (unsubReceive) unsubReceive();
+      if (unsubTyping) unsubTyping();
+      if (unsubReadAck) unsubReadAck();
     };
   }, [on, activeConversation, currentUser, emit]);
 
-  // 4. Send message handler
   const handleSendMessage = (data) => {
     if (!activeConversation || !currentUser) return;
-
-    const payload = {
-      conversationId: activeConversation.conversationId,
-      recipientId: activeConversation.otherParticipant._id,
-      content: data.content,
-      attachments: data.attachments || []
-    };
-
-    emit('message:send', payload, (res) => {
-      if (res && res.success) {
-        console.log('Message sent successfully!');
-      } else {
-        console.error('Failed to send message:', res?.error);
+    emit(
+      'message:send',
+      {
+        conversationId: activeConversation.conversationId,
+        recipientId: activeConversation.otherParticipant._id,
+        content: data.content,
+        attachments: data.attachments || [],
+      },
+      (res) => {
+        if (!res?.success) console.error('Failed to send message:', res?.error);
       }
-    });
+    );
   };
 
-  // 5. Typing notification handler
   const handleTyping = (isTyping) => {
     if (!activeConversation) return;
-
-    emit('message:typing', {
-      recipientId: activeConversation.otherParticipant._id,
-      isTyping
-    });
+    emit('message:typing', { recipientId: activeConversation.otherParticipant._id, isTyping });
   };
 
-  const handleSelectConversation = (conv) => {
-    setActiveConversation(conv);
-  };
+  const filteredConversations = conversations.filter((c) =>
+    c.otherParticipant.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalUnread = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
-      {/* Navbar */}
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+    >
       <Navigation />
 
-      {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-6 flex gap-6 h-[calc(100vh-130px)] overflow-hidden">
         {/* Sidebar */}
-        <div className="w-80 bg-slate-900/60 border border-slate-800 rounded-3xl flex flex-col overflow-hidden backdrop-blur-sm">
-          {/* Header */}
-          <div className="p-5 border-b border-slate-800">
-            <h2 className="text-base font-bold text-slate-100">Conversations</h2>
-            <p className="text-[10px] text-slate-500 font-mono mt-0.5">DIRECT MESSAGES & NEGOTIATIONS</p>
+        <div
+          className="w-80 flex flex-col overflow-hidden rounded-3xl border"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border-primary)' }}
+        >
+          {/* Sidebar Header */}
+          <div className="p-5 border-b" style={{ borderColor: 'var(--border-secondary)' }}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold font-display" style={{ color: 'var(--text-primary)' }}>
+                Messages
+              </h2>
+              {totalUnread > 0 && (
+                <span
+                  className="h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
+                  style={{ background: 'var(--accent-primary)' }}
+                >
+                  {totalUnread}
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] font-mono mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              DIRECT MESSAGES & NEGOTIATIONS
+            </p>
+
+            {/* Search input */}
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search conversations..."
+              className="mt-3 w-full text-xs rounded-xl px-3 py-2 outline-none transition-all"
+              style={{
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-primary)',
+                color: 'var(--text-primary)',
+              }}
+            />
           </div>
 
-          {/* List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-800/50 scrollbar-thin scrollbar-thumb-slate-800">
+          {/* Conversation list */}
+          <div className="flex-1 overflow-y-auto">
             {loadingThreads ? (
-              <div className="flex flex-col items-center justify-center h-full p-8 text-center text-slate-500 gap-2">
-                <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-xs">Loading chats...</span>
+              <div className="p-6 space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex gap-3 items-center animate-pulse">
+                    <div className="h-10 w-10 rounded-full shrink-0" style={{ background: 'var(--bg-tertiary)' }} />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-2/3 rounded" style={{ background: 'var(--bg-tertiary)' }} />
+                      <div className="h-2 w-full rounded" style={{ background: 'var(--bg-tertiary)' }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : conversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full p-8 text-center text-slate-500">
-                <span className="text-2xl mb-1">📭</span>
-                <p className="text-xs font-semibold">No active chats</p>
-                <p className="text-[10px] text-slate-650 mt-1">Start chatting with clients or freelancers via gig proposals.</p>
+            ) : filteredConversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <span className="text-3xl mb-2">📭</span>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                  {searchTerm ? 'No matches found' : 'No conversations yet'}
+                </p>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                  {searchTerm
+                    ? 'Try a different name'
+                    : 'Start chatting from a gig proposal page.'}
+                </p>
               </div>
             ) : (
-              conversations.map((conv) => {
+              filteredConversations.map((conv) => {
                 const isActive = activeConversation?.conversationId === conv.conversationId;
                 const isUnread = conv.unreadCount > 0;
-                
+
                 return (
                   <button
                     key={conv.conversationId}
-                    onClick={() => handleSelectConversation(conv)}
-                    className={`w-full flex gap-3 p-4 text-left transition-all outline-none border-l-4 ${
-                      isActive
-                        ? 'bg-indigo-600/10 border-indigo-500'
-                        : 'border-transparent hover:bg-slate-800/40'
-                    }`}
+                    onClick={() => setActiveConversation(conv)}
+                    className="w-full flex gap-3 p-4 text-left transition-all outline-none border-l-4"
+                    style={{
+                      borderLeftColor: isActive ? 'var(--accent-primary)' : 'transparent',
+                      background: isActive ? 'rgba(45,80,22,0.07)' : 'transparent',
+                    }}
                   >
-                    {/* User Avatar */}
+                    {/* Avatar */}
                     <div className="relative shrink-0">
                       {conv.otherParticipant.avatarUrl ? (
                         <img
                           src={conv.otherParticipant.avatarUrl}
                           alt={conv.otherParticipant.name}
-                          className="h-11 w-11 rounded-full border border-slate-700 object-cover"
+                          className="h-10 w-10 rounded-full object-cover border"
+                          style={{ borderColor: 'var(--border-secondary)' }}
                         />
                       ) : (
-                        <div className="h-11 w-11 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center font-bold text-white border border-slate-650">
+                        <div
+                          className="h-10 w-10 rounded-full flex items-center justify-center font-bold text-white text-sm"
+                          style={{ background: 'var(--accent-primary)' }}
+                        >
                           {conv.otherParticipant.name.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+                      <span
+                        className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
+                        style={{ background: '#22c55e', borderColor: 'var(--bg-card)' }}
+                      />
                     </div>
 
                     {/* Meta */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className={`text-xs font-bold truncate ${isUnread ? 'text-indigo-400' : 'text-slate-200'}`}>
+                      <div className="flex items-center justify-between gap-1">
+                        <span
+                          className="text-xs font-bold truncate"
+                          style={{ color: isUnread ? 'var(--accent-primary)' : 'var(--text-primary)' }}
+                        >
                           {conv.otherParticipant.name}
                         </span>
-                        <span className="text-[9px] font-mono text-slate-500">
+                        <span className="text-[9px] font-mono shrink-0" style={{ color: 'var(--text-muted)' }}>
                           {new Date(conv.lastMessage.createdAt).toLocaleDateString([], {
                             month: 'short',
-                            day: 'numeric'
+                            day: 'numeric',
                           })}
                         </span>
                       </div>
-                      
-                      <span className="text-[9px] font-mono text-slate-400 block mt-0.5">
+                      <span className="text-[9px] font-mono block mt-0.5 capitalize" style={{ color: 'var(--text-muted)' }}>
                         {conv.otherParticipant.role}
                       </span>
-                      
-                      <p className={`text-[11px] truncate mt-1.5 ${isUnread ? 'font-bold text-slate-100' : 'text-slate-400'}`}>
-                        {conv.lastMessage.content || (conv.lastMessage.attachments?.length > 0 ? '📎 File Attachment' : 'No message preview')}
+                      <p
+                        className="text-[11px] truncate mt-1.5"
+                        style={{ color: isUnread ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: isUnread ? 600 : 400 }}
+                      >
+                        {conv.lastMessage.content ||
+                          (conv.lastMessage.attachments?.length > 0 ? '📎 File Attachment' : 'No preview')}
                       </p>
                     </div>
 
-                    {/* Unread count badge */}
+                    {/* Unread badge */}
                     {isUnread && (
-                      <span className="h-5 min-w-5 px-1 rounded-full bg-indigo-600 text-[10px] font-bold text-white flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                      <span
+                        className="h-5 min-w-5 px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center shrink-0"
+                        style={{ background: 'var(--accent-primary)' }}
+                      >
                         {conv.unreadCount}
                       </span>
                     )}
@@ -278,12 +309,18 @@ export default function Messages() {
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden backdrop-blur-sm flex flex-col relative">
+        {/* Chat area */}
+        <div
+          className="flex-1 rounded-3xl overflow-hidden flex flex-col relative border"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border-primary)' }}
+        >
           {loadingMessages ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
-              <div className="h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-              <span className="text-xs">Loading message logs...</span>
+            <div className="flex-1 flex flex-col items-center justify-center" style={{ color: 'var(--text-muted)' }}>
+              <div
+                className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin mb-2"
+                style={{ borderColor: 'var(--accent-primary)', borderTopColor: 'transparent' }}
+              />
+              <span className="text-xs">Loading messages...</span>
             </div>
           ) : (
             <ChatWindow
@@ -298,9 +335,11 @@ export default function Messages() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-900/30 py-6 text-center text-xs text-slate-500">
-        <p>© 2026 SkillSphere Hyperlocal Freelance Marketplace. All Rights Reserved.</p>
+      <footer
+        className="py-6 text-center text-xs border-t"
+        style={{ borderColor: 'var(--border-primary)', color: 'var(--text-muted)' }}
+      >
+        © 2026 SkillSphere Hyperlocal Freelance Marketplace. All Rights Reserved.
       </footer>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navigation from '../components/Navigation.jsx';
+import { IconMessage as IconChat, IconGlobe, IconMapPin, IconSend } from '../components/icons';
 
 export default function PostGig() {
   const navigate = useNavigate();
@@ -46,6 +47,8 @@ export default function PostGig() {
   const handleRemoveSkill = (skillToRemove) => {
     setRequiredSkills(requiredSkills.filter(s => s !== skillToRemove));
   };
+
+  
 
   // Milestones manipulation
   const handleAddMilestone = () => {
@@ -129,32 +132,48 @@ export default function PostGig() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Navigation />
 
       <main className="max-w-3xl mx-auto px-6 py-12 flex-grow w-full space-y-8">
         {/* Title */}
         <div>
-          <h1 className="text-3xl font-black">Post a New Gig</h1>
-          <p className="text-xs text-slate-500 font-mono mt-1">Setup your project details, milestone payouts, and find developers near you.</p>
+          <h1 className="text-3xl font-black font-display" style={{ color: 'var(--text-primary)' }}>Post a New Gig</h1>
+          <p className="text-xs font-mono mt-1" style={{ color: 'var(--text-muted)' }}>Setup your project details, milestone payouts, and find developers near you.</p>
+        </div>
+
+        {/* Start Conversation Block */}
+        <div className="w-full max-w-md mx-auto">
+          <div className="p-4 rounded-xl border flex items-center justify-between" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}>
+                <IconChat className="w-5 h-5" />
+              </div>
+              <div>
+                <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Start a Conversation</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Discuss scope, ask clarifying questions, or invite collaborators.</div>
+              </div>
+            </div>
+            <div>
+              <button type="button" onClick={() => navigate('/messages')} className="btn-primary text-xs py-2 px-3">Message</button>
+            </div>
+          </div>
         </div>
 
         {/* Progress Step Header */}
-        <div className="flex justify-between items-center bg-slate-900/30 p-4 border border-slate-800 rounded-2xl backdrop-blur-sm">
+        <div className="flex justify-between items-center p-4 border rounded-2xl" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-primary)' }}>
           {[1, 2, 3, 4].map((s) => (
             <div key={s} className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                step === s
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
+              <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border transition-all"
+                style={step === s
+                  ? { background: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', color: '#fff' }
                   : step > s
-                  ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                  : 'bg-slate-950 border border-slate-800 text-slate-600'
-              }`}>
+                  ? { background: 'rgba(45,80,22,0.1)', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }
+                  : { background: 'var(--bg-tertiary)', borderColor: 'var(--border-secondary)', color: 'var(--text-muted)' }}
+              >
                 {s}
               </div>
-              <span className={`text-xs font-semibold hidden md:inline ${
-                step === s ? 'text-indigo-400' : 'text-slate-500'
-              }`}>
+              <span className="text-xs font-semibold hidden md:inline" style={{ color: step === s ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
                 {s === 1 && 'Project Details'}
                 {s === 2 && 'Milestones'}
                 {s === 3 && 'Attachments'}
@@ -171,7 +190,7 @@ export default function PostGig() {
         )}
 
         {/* Wizard Form Panels */}
-        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm space-y-6">
+        <div className="rounded-2xl border p-8 space-y-6" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-secondary)' }}>
           {/* STEP 1: Details */}
           {step === 1 && (
             <div className="space-y-4">
@@ -183,7 +202,8 @@ export default function PostGig() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Need senior React developer to implement map module"
-                  className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-sm rounded-xl px-4 py-3"
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                 />
               </div>
 
@@ -195,7 +215,8 @@ export default function PostGig() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Write a clear brief detailing tasks, technologies, and deadlines..."
-                  className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-605 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-sm rounded-xl px-4 py-3"
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                 ></textarea>
               </div>
 
@@ -208,22 +229,27 @@ export default function PostGig() {
                   onChange={(e) => setSkillsInput(e.target.value)}
                   onKeyDown={handleAddSkill}
                   placeholder="React, Express, Python..."
-                  className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-sm rounded-xl px-4 py-3"
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                 />
+
                 {requiredSkills.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-2">
                     {requiredSkills.map((tag) => (
                       <span
                         key={tag}
-                        className="text-xs bg-slate-800 text-slate-350 border border-slate-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5"
+                        className="text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5"
+                        style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-secondary)' }}
                       >
                         {tag}
                         <button
                           type="button"
                           onClick={() => handleRemoveSkill(tag)}
                           className="hover:text-rose-450 font-bold text-[10px]"
+                          style={{ background: 'transparent', border: 'none', padding: 0 }}
+                          aria-label={`Remove ${tag}`}
                         >
-                          ✕
+                          <IconClose className="w-3 h-3" />
                         </button>
                       </span>
                     ))}
@@ -238,7 +264,8 @@ export default function PostGig() {
                   <select
                     value={budgetType}
                     onChange={(e) => setBudgetType(e.target.value)}
-                    className="w-full text-sm bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-slate-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full text-sm rounded-xl px-3 py-3"
+                    style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                   >
                     <option value="fixed">Fixed Price</option>
                     <option value="hourly">Hourly Rate</option>
@@ -253,7 +280,8 @@ export default function PostGig() {
                     value={budgetMin}
                     onChange={(e) => setBudgetMin(e.target.value)}
                     placeholder="100"
-                    className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    className="w-full text-sm rounded-xl px-4 py-3"
+                    style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                   />
                 </div>
                 <div className="space-y-1">
@@ -264,48 +292,52 @@ export default function PostGig() {
                     value={budgetMax}
                     onChange={(e) => setBudgetMax(e.target.value)}
                     placeholder="500"
-                    className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    className="w-full text-sm rounded-xl px-4 py-3"
+                    style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                   />
                 </div>
               </div>
 
               {/* Location details */}
-              <div className="border-t border-slate-800/80 pt-4 space-y-4">
+              <div className="border-t" style={{ borderColor: 'var(--border-secondary)', paddingTop: '1rem' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-[11px] font-bold text-slate-200 block">Remote OK?</label>
-                    <span className="text-[10px] text-slate-500 font-mono">Check if this gig is open to remote freelancers</span>
+                    <label className="text-[11px] font-bold" style={{ color: 'var(--text-secondary)' }}>Remote OK?</label>
+                    <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Check if this gig is open to remote freelancers</div>
                   </div>
                   <input
                     type="checkbox"
                     checked={isRemoteOk}
                     onChange={(e) => setIsRemoteOk(e.target.checked)}
-                    className="w-4 h-4 rounded text-indigo-600 bg-slate-950 border-slate-800 focus:ring-indigo-500 focus:ring-2"
+                    className="w-4 h-4 rounded"
+                    style={{ background: 'transparent', border: '1px solid var(--border-primary)' }}
                   />
                 </div>
 
                 {!isRemoteOk && (
                   <div className="grid grid-cols-2 gap-4 animate-fadeIn">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">City</label>
+                      <label className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>City</label>
                       <input
                         required
                         type="text"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         placeholder="Mumbai"
-                        className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                        className="w-full text-sm rounded-xl px-4 py-3"
+                        style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Street Address</label>
+                      <label className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>Street Address</label>
                       <input
                         required
                         type="text"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         placeholder="Bandra West"
-                        className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                        className="w-full text-sm rounded-xl px-4 py-3"
+                        style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
                       />
                     </div>
                   </div>
@@ -333,7 +365,7 @@ export default function PostGig() {
 
               <div className="space-y-3">
                 {milestones.map((m, idx) => (
-                  <div key={idx} className="bg-slate-950/40 p-4 border border-slate-850 rounded-xl space-y-3 relative group">
+                  <div key={idx} className="p-4 rounded-xl space-y-3 relative group" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)' }}>
                     {milestones.length > 1 && (
                       <button
                         type="button"
@@ -353,7 +385,8 @@ export default function PostGig() {
                           value={m.title}
                           onChange={(e) => handleMilestoneChange(idx, 'title', e.target.value)}
                           placeholder="e.g. Design Wireframes"
-                          className="w-full text-xs bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100"
+                          className="w-full text-xs rounded-lg px-3 py-2"
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', color: 'var(--text-primary)' }}
                         />
                       </div>
                       <div className="space-y-1">
@@ -365,7 +398,8 @@ export default function PostGig() {
                           value={m.amount}
                           onChange={(e) => handleMilestoneChange(idx, 'amount', e.target.value)}
                           placeholder="Amount"
-                          className="w-full text-xs bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100"
+                          className="w-full text-xs rounded-lg px-3 py-2"
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', color: 'var(--text-primary)' }}
                         />
                       </div>
                       <div className="space-y-1">
@@ -374,7 +408,8 @@ export default function PostGig() {
                           type="date"
                           value={m.dueDate}
                           onChange={(e) => handleMilestoneChange(idx, 'dueDate', e.target.value)}
-                          className="w-full text-xs bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none"
+                          className="w-full text-xs rounded-lg px-3 py-2"
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', color: 'var(--text-primary)' }}
                         />
                       </div>
                     </div>
@@ -393,7 +428,7 @@ export default function PostGig() {
               </div>
 
               {/* Add attachment form */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-slate-950/40 p-4 border border-slate-850 rounded-xl">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)' }}>
                 <div className="md:col-span-2 space-y-1">
                   <label className="text-[9px] uppercase tracking-wider font-mono text-slate-500 block">Label</label>
                   <input
@@ -401,7 +436,8 @@ export default function PostGig() {
                     value={attachmentName}
                     onChange={(e) => setAttachmentName(e.target.value)}
                     placeholder="Brief PDF"
-                    className="w-full text-xs bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100"
+                    className="w-full text-xs rounded-lg px-3 py-2"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', color: 'var(--text-primary)' }}
                   />
                 </div>
                 <div className="md:col-span-2 space-y-1">
@@ -411,7 +447,8 @@ export default function PostGig() {
                     value={attachmentUrl}
                     onChange={(e) => setAttachmentUrl(e.target.value)}
                     placeholder="https://example.com/brief.pdf"
-                    className="w-full text-xs bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100"
+                    className="w-full text-xs rounded-lg px-3 py-2"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', color: 'var(--text-primary)' }}
                   />
                 </div>
                 <div className="md:col-span-1 flex items-end">
@@ -430,8 +467,8 @@ export default function PostGig() {
                   <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Added Attachments</span>
                   <div className="space-y-2">
                     {attachments.map((att, idx) => (
-                      <div key={idx} className="bg-slate-950/40 p-3 rounded-xl border border-slate-850 flex items-center justify-between text-xs font-mono">
-                        <span className="text-slate-350">{att.name} ({att.url})</span>
+                      <div key={idx} className="p-3 rounded-xl border flex items-center justify-between text-xs font-mono" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)' }}>
+                        <span style={{ color: 'var(--text-primary)' }}>{att.name} ({att.url})</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveAttachment(idx)}
@@ -455,7 +492,7 @@ export default function PostGig() {
                 <span className="text-[10px] text-slate-500 font-mono">Double check your details before opening the gig to applications.</span>
               </div>
 
-              <div className="space-y-4 border border-slate-800 p-6 bg-slate-950/40 rounded-xl text-sm font-sans space-y-4">
+              <div className="space-y-4 border p-6 rounded-xl text-sm font-sans space-y-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', color: 'var(--text-primary)' }}>
                 <div>
                   <strong className="text-slate-400 block font-mono text-xs uppercase">Title</strong>
                   <span className="text-slate-200 text-lg font-bold">{title}</span>
@@ -479,32 +516,36 @@ export default function PostGig() {
                 </div>
                 <div>
                   <strong className="text-slate-400 block font-mono text-xs uppercase">Required Skills</strong>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {requiredSkills.map(tag => (
-                      <span key={tag} className="text-xs bg-slate-800 border border-slate-700/60 px-2 py-0.5 rounded-md text-slate-300">
+                      <span key={tag} className="text-xs px-2 py-0.5 rounded-md" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)', color: 'var(--text-primary)' }}>
                         {tag}
                       </span>
                     ))}
-                  </div>
+                    </div>
                 </div>
                 <div>
-                  <strong className="text-slate-400 block font-mono text-xs uppercase">Location Type</strong>
-                  <span className="text-slate-200">
-                    {isRemoteOk ? '🌐 Remote OK' : `📍 On-site (${city}, ${address})`}
-                  </span>
+                  <strong style={{ color: 'var(--text-secondary)' }} className="block font-mono text-xs uppercase">Location Type</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
+                    {isRemoteOk ? (
+                      <><IconGlobe className="w-4 h-4" /> <span>Remote OK</span></>
+                    ) : (
+                      <><IconMapPin className="w-4 h-4" /> <span>On-site ({city}, {address})</span></>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           {/* Navigation Controls */}
-          <div className="flex justify-between items-center border-t border-slate-800/80 pt-6">
+          <div className="flex justify-between items-center border-t pt-6" style={{ borderColor: 'var(--border-secondary)' }}>
             <button
               type="button"
               onClick={() => setStep((s) => Math.max(s - 1, 1))}
               disabled={step === 1 || loading}
-              className="bg-slate-800 hover:bg-slate-750 text-slate-300 disabled:opacity-30 text-xs font-bold py-2 px-5 rounded-xl border border-slate-700 transition-colors"
-            >
+              className="text-xs font-bold py-2 px-5 rounded-xl border transition-all disabled:opacity-30"
+              style={{ background: 'var(--bg-tertiary)', borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}>
               Back
             </button>
 
@@ -513,8 +554,7 @@ export default function PostGig() {
                 type="button"
                 onClick={() => setStep((s) => Math.min(s + 1, 4))}
                 disabled={step === 1 && (!title || !description || requiredSkills.length === 0 || !budgetMin)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 text-xs font-bold py-2 px-5 rounded-xl transition-all"
-              >
+                className="btn-primary text-xs py-2 px-5 disabled:opacity-40">
                 Next Step
               </button>
             ) : (
@@ -522,16 +562,15 @@ export default function PostGig() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 px-6 rounded-xl shadow-lg transition-all"
-              >
-                {loading ? 'Publishing...' : 'Publish Gig'}
+                className="btn-primary text-xs py-2.5 px-6">
+                {loading ? 'Publishing...' : (<><IconRocket className="inline-block mr-2" /> Publish Gig</>)}
               </button>
             )}
           </div>
         </div>
       </main>
 
-      <footer className="border-t border-slate-800 bg-slate-900/30 py-6 text-center text-xs text-slate-500">
+      <footer className="py-6 text-center text-xs border-t" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-muted)' }}>
         <p>© 2026 SkillSphere Hyperlocal Freelance Marketplace. All Rights Reserved.</p>
       </footer>
     </div>

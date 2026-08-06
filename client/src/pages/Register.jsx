@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { IconUser, IconBriefcase, IconCheck, IconAlert, IconSend } from '../components/icons';
 import { useAuth } from '../hooks/useAuth.js';
 
 export default function Register() {
@@ -11,7 +12,7 @@ export default function Register() {
   const currentRole = (roleParam === 'freelancer' || roleParam === 'client') ? roleParam : null;
 
   // Local component state for role selection in Step 1
-  const [selectedRole, setSelectedRole] = useState(currentRole || 'freelancer');
+  const [selectedRole, setSelectedRole] = useState(currentRole || null);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -37,6 +38,8 @@ export default function Register() {
   useEffect(() => {
     if (currentRole) {
       setSelectedRole(currentRole);
+    } else {
+      setSelectedRole(null);
     }
   }, [currentRole]);
 
@@ -46,11 +49,7 @@ export default function Register() {
   };
 
   const handleCardClick = (role) => {
-    if (selectedRole === role) {
-      handleSelectAndProceed(role);
-    } else {
-      setSelectedRole(role);
-    }
+    setSelectedRole(role);
   };
 
   const handleSubmit = async (e) => {
@@ -153,7 +152,7 @@ export default function Register() {
               <div className="absolute top-5 right-5">
                 {selectedRole === 'freelancer' ? (
                   <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md animate-fade-in-up" style={{ background: 'var(--accent-primary)' }}>
-                    ✓
+                    <IconCheck className="w-4 h-4" />
                   </div>
                 ) : (
                   <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-700 group-hover:border-slate-400"></div>
@@ -163,9 +162,7 @@ export default function Register() {
               <div>
                 {/* Icon */}
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md transition-transform group-hover:scale-105" style={{ background: 'rgba(26,107,75,0.12)', color: 'var(--accent-primary)', border: '1px solid rgba(26,107,75,0.2)' }}>
-                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+                  <IconUser className="w-7 h-7" />
                 </div>
 
                 {/* Headline & Subtitle */}
@@ -225,7 +222,7 @@ export default function Register() {
               <div className="absolute top-5 right-5">
                 {selectedRole === 'client' ? (
                   <div className="w-7 h-7 rounded-full flex items-center justify-center text-slate-900 text-xs font-bold shadow-md animate-fade-in-up" style={{ background: 'var(--accent-secondary)' }}>
-                    ✓
+                    <IconCheck className="w-4 h-4" />
                   </div>
                 ) : (
                   <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-700 group-hover:border-slate-400"></div>
@@ -235,9 +232,7 @@ export default function Register() {
               <div>
                 {/* Icon */}
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md transition-transform group-hover:scale-105" style={{ background: 'rgba(201,162,39,0.12)', color: 'var(--accent-secondary)', border: '1px solid rgba(201,162,39,0.2)' }}>
-                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h4m-4 0V11m0 0V8m0 3h4m-4 0H9m4 0v4m0 0h4m-4 0H9" />
-                  </svg>
+                  <IconBriefcase className="w-7 h-7" />
                 </div>
 
                 {/* Headline & Subtitle */}
@@ -386,7 +381,7 @@ export default function Register() {
                     }
                   >
                     <span className={`w-2 h-2 rounded-full ${currentRole === 'client' ? 'bg-amber-400' : 'bg-emerald-500'} animate-pulse`}></span>
-                    Registering as {currentRole === 'client' ? 'Client' : 'Freelancer'} 🟢
+                      Registering as {currentRole === 'client' ? 'Client' : 'Freelancer'}
                   </span>
                 </div>
                 <button
@@ -505,9 +500,9 @@ export default function Register() {
 
                 {/* Social Divider */}
                 <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-slate-800"></div>
-                  <span className="flex-shrink mx-4 text-slate-500 text-xs font-mono uppercase tracking-widest">Or</span>
-                  <div className="flex-grow border-t border-slate-800"></div>
+                  <div className="grow border-t border-slate-800"></div>
+                  <span className="shrink mx-4 text-slate-500 text-xs font-mono uppercase tracking-widest">Or</span>
+                  <div className="grow border-t border-slate-800"></div>
                 </div>
 
                 {/* Google OAuth (Stub) */}

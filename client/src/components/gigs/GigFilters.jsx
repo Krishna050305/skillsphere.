@@ -8,12 +8,10 @@ export default function GigFilters({ onChange, initialFilters = {} }) {
   const [isRemoteOk, setIsRemoteOk] = useState(initialFilters.isRemoteOk || false);
   const [radius, setRadius] = useState(initialFilters.radius || 50);
 
-  // Geographic coordinates (Mumbai coordinates as default mock, or read from browser geolocation)
   const [useGeoloc, setUseGeoloc] = useState(false);
   const [latitude, setLatitude] = useState(19.0760);
   const [longitude, setLongitude] = useState(72.8777);
 
-  // Capture user location if checkbox clicked
   useEffect(() => {
     if (useGeoloc && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -22,13 +20,12 @@ export default function GigFilters({ onChange, initialFilters = {} }) {
           setLongitude(position.coords.longitude);
         },
         (err) => {
-          console.warn('Geolocation access denied, falling back to default Mumbai coordinates.', err.message);
+          console.warn('Geolocation access denied, falling back to default coordinates.', err.message);
         }
       );
     }
   }, [useGeoloc]);
 
-  // Debounce filter trigger
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       const filters = {
@@ -46,7 +43,7 @@ export default function GigFilters({ onChange, initialFilters = {} }) {
       }
 
       onChange(filters);
-    }, 500); // 500ms debounce
+    }, 400);
 
     return () => clearTimeout(delayDebounce);
   }, [search, skill, minBudget, maxBudget, isRemoteOk, radius, useGeoloc, latitude, longitude, onChange]);
@@ -62,12 +59,13 @@ export default function GigFilters({ onChange, initialFilters = {} }) {
   };
 
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm sticky top-24 space-y-6">
-      <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-        <h3 className="text-md font-bold text-slate-100">Filter Gigs</h3>
+    <div className="card p-6 sticky top-24 space-y-6" style={{ background: 'var(--bg-card)' }}>
+      <div className="flex justify-between items-center border-b pb-4" style={{ borderColor: 'var(--border-secondary)' }}>
+        <h3 className="text-base font-bold font-display" style={{ color: 'var(--text-primary)' }}>Filter Gigs</h3>
         <button
           onClick={handleReset}
-          className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+          className="text-xs font-semibold hover:underline cursor-pointer"
+          style={{ color: 'var(--accent-primary)' }}
         >
           Reset All
         </button>
@@ -75,37 +73,37 @@ export default function GigFilters({ onChange, initialFilters = {} }) {
 
       {/* Keyword Search */}
       <div className="space-y-2">
-        <label className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wider block">
+        <label className="text-xs font-mono font-semibold uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>
           Keyword Search
         </label>
-        <div className="relative">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search title, desc..."
-            className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-          />
-        </div>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Title, description..."
+          className="w-full text-sm rounded-xl px-4 py-2.5 outline-none transition-all"
+          style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+        />
       </div>
 
       {/* Skill Tag */}
       <div className="space-y-2">
-        <label className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wider block">
-          Required Skill Tag
+        <label className="text-xs font-mono font-semibold uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>
+          Required Skill
         </label>
         <input
           type="text"
           value={skill}
           onChange={(e) => setSkill(e.target.value)}
-          placeholder="e.g. React, Node.js"
-          className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+          placeholder="React, Python, Node..."
+          className="w-full text-sm rounded-xl px-4 py-2.5 outline-none transition-all"
+          style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
         />
       </div>
 
       {/* Budget Range */}
       <div className="space-y-2">
-        <label className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wider block">
+        <label className="text-xs font-mono font-semibold uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>
           Budget Range ($)
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -113,50 +111,52 @@ export default function GigFilters({ onChange, initialFilters = {} }) {
             type="number"
             value={minBudget}
             onChange={(e) => setMinBudget(e.target.value)}
-            placeholder="Min"
-            className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+            placeholder="Min $"
+            className="w-full text-sm rounded-xl px-3 py-2 outline-none transition-all"
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
           />
           <input
             type="number"
             value={maxBudget}
             onChange={(e) => setMaxBudget(e.target.value)}
-            placeholder="Max"
-            className="w-full text-sm bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+            placeholder="Max $"
+            className="w-full text-sm rounded-xl px-3 py-2 outline-none transition-all"
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
           />
         </div>
       </div>
 
       {/* Remote Toggle */}
-      <div className="flex items-center justify-between bg-slate-950/40 p-3 rounded-xl border border-slate-800/65">
-        <span className="text-xs font-semibold text-slate-300">Remote Work Only</span>
+      <div className="flex items-center justify-between p-3 rounded-xl border" style={{ background: 'var(--bg-tertiary)', borderColor: 'var(--border-secondary)' }}>
+        <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Remote Work Only</span>
         <input
           type="checkbox"
           checked={isRemoteOk}
           onChange={(e) => setIsRemoteOk(e.target.checked)}
-          className="w-4 h-4 rounded text-indigo-600 bg-slate-950 border-slate-800 focus:ring-indigo-500 focus:ring-offset-slate-900 focus:ring-2"
+          className="w-4 h-4 rounded cursor-pointer accent-[var(--accent-primary)]"
         />
       </div>
 
       {/* Hyperlocal Geolocation Filters */}
-      <div className="border-t border-slate-800/80 pt-6 space-y-4">
+      <div className="border-t pt-5 space-y-4" style={{ borderColor: 'var(--border-secondary)' }}>
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-200 block">Hyperlocal Matching</span>
-            <span className="text-[10px] text-slate-500 font-mono">Limit by travel radius</span>
+            <span className="text-xs font-bold block" style={{ color: 'var(--text-primary)' }}>Hyperlocal Matching</span>
+            <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>Limit by travel radius</span>
           </div>
           <input
             type="checkbox"
             checked={useGeoloc}
             onChange={(e) => setUseGeoloc(e.target.checked)}
-            className="w-4 h-4 rounded text-indigo-600 bg-slate-950 border-slate-800 focus:ring-indigo-500 focus:ring-2"
+            className="w-4 h-4 rounded cursor-pointer accent-[var(--accent-primary)]"
           />
         </div>
 
         {useGeoloc && (
-          <div className="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-slate-800/80 animate-fadeIn">
+          <div className="space-y-3 p-4 rounded-xl border" style={{ background: 'var(--bg-tertiary)', borderColor: 'var(--border-secondary)' }}>
             <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400 font-medium">Search Radius</span>
-              <span className="font-mono font-bold text-indigo-400">{radius} km</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Search Radius</span>
+              <span className="font-mono font-bold" style={{ color: 'var(--accent-primary)' }}>{radius} km</span>
             </div>
             <input
               type="range"
@@ -165,15 +165,12 @@ export default function GigFilters({ onChange, initialFilters = {} }) {
               step="5"
               value={radius}
               onChange={(e) => setRadius(Number(e.target.value))}
-              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[var(--accent-primary)]"
             />
-            <div className="text-[10px] text-slate-500 font-mono flex justify-between">
-              <span>Lat: {latitude.toFixed(4)}</span>
-              <span>Lng: {longitude.toFixed(4)}</span>
-            </div>
           </div>
         )}
       </div>
     </div>
   );
 }
+

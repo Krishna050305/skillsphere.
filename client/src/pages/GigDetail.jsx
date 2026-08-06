@@ -8,6 +8,9 @@ import ProposalList from '../components/proposals/ProposalList.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import ReviewForm from '../components/reviews/ReviewForm.jsx';
 import MilestoneTracker from '../components/payments/MilestoneTracker.jsx';
+import { IconStar, IconMapPin, IconSend, IconCheck, IconUser, IconAward, IconExternal, IconPaperclip, IconGlobe, IconMessage } from '../components/icons';
+
+const API = 'http://localhost:5000/api';
 
 export default function GigDetail() {
   const { id } = useParams();
@@ -15,7 +18,7 @@ export default function GigDetail() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [showProposalForm, setShowProposalForm] = useState(false);
-  const [activeTab, setActiveTab] = useState('proposals'); // 'proposals' or 'recommendations'
+  const [activeTab, setActiveTab] = useState('proposals'); 
   const [inviteStatus, setInviteStatus] = useState({});
 
   // 1. Fetch Gig Details
@@ -24,7 +27,7 @@ export default function GigDetail() {
     queryFn: async () => {
       const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`http://localhost:5000/api/gigs/${id}`, { headers });
+      const res = await axios.get(`${API}/gigs/${id}`, { headers });
       return res.data?.gig;
     },
   });
@@ -39,7 +42,7 @@ export default function GigDetail() {
     queryFn: async () => {
       const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`http://localhost:5000/api/proposals/gig/${id}`, { headers });
+      const res = await axios.get(`${API}/proposals/gig/${id}`, { headers });
       return res.data?.proposals || [];
     },
     enabled: !!gigData && canSeeProposals,
@@ -51,7 +54,7 @@ export default function GigDetail() {
     queryFn: async () => {
       const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`http://localhost:5000/api/gigs/${id}/recommended-freelancers`, { headers });
+      const res = await axios.get(`${API}/gigs/${id}/recommended-freelancers`, { headers });
       return res.data?.results || [];
     },
     enabled: !!gigData && isOwner,
@@ -59,16 +62,16 @@ export default function GigDetail() {
 
   const isFreelancer = user?.role === 'freelancer';
 
-  // Fetch own proposal if freelancer on a completed gig to get proposal ID for review
+  // Fetch own proposal if freelancer
   const { data: myProposalData } = useQuery({
     queryKey: ['myProposal', id],
     queryFn: async () => {
       const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`http://localhost:5000/api/proposals/my-proposal/gig/${id}`, { headers });
+      const res = await axios.get(`${API}/proposals/my-proposal/gig/${id}`, { headers });
       return res.data?.proposal;
     },
-    enabled: !!gigData && isFreelancer && gigData.status === 'completed',
+    enabled: !!gigData && isFreelancer,
   });
 
   // 4. Invite Freelancer Mutation
@@ -77,7 +80,7 @@ export default function GigDetail() {
       const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await axios.post(
-        `http://localhost:5000/api/gigs/${id}/invite`,
+        `${API}/gigs/${id}/invite`,
         { freelancerId },
         { headers }
       );
@@ -89,30 +92,57 @@ export default function GigDetail() {
     },
   });
 
+  // Render Stars
+  const renderStars = (score = 5) => {
+    const stars = [];
+    const count = Math.round(score);
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <IconStar
+          key={i}
+          className={`w-3.5 h-3.5 ${i <= count ? 'text-[var(--accent-secondary)] fill-[var(--accent-secondary)]' : ''}`}
+          style={i <= count ? { color: 'var(--accent-secondary)' } : { color: 'var(--text-muted)' }}
+        />
+      );
+    }
+    return <div className="flex items-center gap-0.5">{stars}</div>;
+  };
+
+  // Loading Skeleton State
   if (gigLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
+      <div className="min-h-screen flex flex-col justify-between" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <Navigation />
-        <div className="flex-grow flex items-center justify-center">
-          <div className="text-center space-y-3">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-sm font-mono text-slate-400">Loading Gig Details...</p>
+        <main className="max-w-6xl mx-auto px-6 py-12 flex-grow w-full space-y-8 animate-pulse">
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="card p-8 space-y-6">
+                <div className="h-8 w-3/4 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                <div className="h-20 w-full bg-gray-200 dark:bg-gray-800 rounded"></div>
+                <div className="h-10 w-1/2 bg-gray-200 dark:bg-gray-800 rounded"></div>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <div className="card p-6 h-64 bg-gray-200 dark:bg-gray-800 rounded"></div>
+            </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
+  // Error State
   if (gigError || !gigData) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
+      <div className="min-h-screen flex flex-col justify-between" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <Navigation />
-        <div className="flex-grow flex items-center justify-center">
-          <div className="text-center space-y-4 max-w-sm">
-            <span className="text-4xl">⚠️</span>
-            <h3 className="text-lg font-bold text-slate-200">Gig Not Found</h3>
-            <p className="text-sm text-slate-400">The project link might be broken or the gig has been removed.</p>
-            <Link to="/gigs" className="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-6 rounded-xl text-xs">
+        <div className="flex-grow flex items-center justify-center p-6">
+          <div className="card p-12 text-center max-w-md w-full space-y-4">
+            <span className="text-4xl block">⚠️</span>
+            <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Gig Not Found</h3>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>The project link might be broken or the gig has been removed.</p>
+            <Link to="/gigs" className="btn-primary inline-block text-xs no-underline">
               Back to Marketplace
             </Link>
           </div>
@@ -121,109 +151,175 @@ export default function GigDetail() {
     );
   }
 
-  // Check if current freelancer already submitted a proposal
-  const hasSubmittedProposal = proposalsData?.some(
+  const hasSubmittedProposal = !!myProposalData || proposalsData?.some(
     (p) => p.freelancer?._id === user?._id || p.freelancer === user?._id
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen flex flex-col justify-between" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Navigation />
 
       <main className="max-w-6xl mx-auto px-6 py-12 flex-grow w-full space-y-8">
         {/* Back Link */}
-        <Link to="/gigs" className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5 w-fit">
+        <Link to="/gigs" className="text-xs font-semibold hover:underline flex items-center gap-1.5 w-fit" style={{ color: 'var(--accent-primary)' }}>
           <span>←</span> Back to Marketplace
         </Link>
 
-        {/* Main Columns */}
+        {/* Prominent Assigned Freelancer Card (if assigned) */}
+        {gigData.assignedFreelancer && (
+          <div className="card p-6 border-l-4" style={{ borderLeftColor: 'var(--accent-primary)' }}>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-md text-lg" style={{ background: 'var(--gradient-brand)' }}>
+                  {gigData.assignedFreelancer.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Assigned Freelancer</span>
+                    <span className="badge badge-green text-[10px]">Active Hire</span>
+                  </div>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{gigData.assignedFreelancer.name}</h3>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{gigData.assignedFreelancer.email}</p>
+                </div>
+              </div>
+                <Link to="/messages" className="btn-primary text-xs flex items-center gap-2 no-underline">
+                <IconSend className="w-3.5 h-3.5" /> Message Freelancer
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Main Grid Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Gig Details Column */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm space-y-6">
+            <div className="card p-8 space-y-6">
               {/* Header Info */}
               <div className="flex justify-between items-start gap-4 flex-wrap">
                 <div className="space-y-2">
-                  <span className={`text-[9px] uppercase font-mono tracking-widest px-2.5 py-1 rounded-full ${
-                    gigData.status === 'open' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  }`}>
-                    {gigData.status} Status
+                  <span className={`badge ${gigData.status === 'open' ? 'badge-green' : 'badge-gold'}`}>
+                    ● {gigData.status?.toUpperCase()}
                   </span>
-                  <h1 className="text-2xl font-black text-slate-100">{gigData.title}</h1>
+                  <h1 className="text-2xl md:text-3xl font-extrabold font-display" style={{ color: 'var(--text-primary)' }}>
+                    {gigData.title}
+                  </h1>
+                  <p className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                    Posted by <strong style={{ color: 'var(--text-primary)' }}>{gigData.client?.name || 'Client'}</strong> • {new Date(gigData.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] uppercase font-mono text-slate-500 block">Est. Budget</span>
-                  <span className="text-xl font-black text-indigo-400">
-                    ${gigData.budgetMin.toLocaleString()}
+                  <span className="text-[10px] uppercase font-mono block" style={{ color: 'var(--text-muted)' }}>Est. Budget</span>
+                  <span className="text-2xl font-extrabold font-display" style={{ color: 'var(--accent-secondary)' }}>
+                    ${gigData.budgetMin?.toLocaleString()}
                     {gigData.budgetMax ? ` - $${gigData.budgetMax.toLocaleString()}` : '+'}
-                    {gigData.budgetType === 'hourly' ? '/hr' : ' Fixed'}
+                  </span>
+                  <span className="text-xs block font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                    {gigData.budgetType === 'hourly' ? 'Hourly Rate' : 'Fixed Price'}
                   </span>
                 </div>
               </div>
 
               {/* Description */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-bold text-slate-350 uppercase tracking-wider font-mono">Job Description</h3>
-                <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line font-sans">
+              <div className="space-y-2 pt-4 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+                <h3 className="text-xs font-bold uppercase tracking-wider font-mono" style={{ color: 'var(--text-muted)' }}>
+                  Job Description
+                </h3>
+                <p className="text-sm leading-relaxed whitespace-pre-line font-sans" style={{ color: 'var(--text-secondary)' }}>
                   {gigData.description}
                 </p>
               </div>
 
               {/* Required Skills */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-bold text-slate-350 uppercase tracking-wider font-mono">Required Skills</h3>
+              <div className="space-y-2 pt-4 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+                <h3 className="text-xs font-bold uppercase tracking-wider font-mono mb-2" style={{ color: 'var(--text-muted)' }}>
+                  Required Skills & Qualifications
+                </h3>
                 <div className="flex flex-wrap gap-2">
-                  {gigData.requiredSkills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700/80 px-3 py-1 rounded-lg"
-                    >
+                  {gigData.requiredSkills?.map((skill, idx) => (
+                    <span key={idx} className="badge badge-green text-xs">
                       {skill}
                     </span>
                   ))}
                 </div>
               </div>
 
-              {/* Milestones */}
+              {/* Project Milestones Table */}
               {gigData.milestones && gigData.milestones.length > 0 && (
-                <div className="space-y-4 pt-4 border-t border-slate-800/80">
-                  <h3 className="text-sm font-bold text-slate-350 uppercase tracking-wider font-mono">Project Milestones</h3>
-                  <div className="space-y-3">
-                    {gigData.milestones.map((milestone, idx) => (
-                      <div
-                        key={milestone._id || idx}
-                        className="bg-slate-950/40 p-4 rounded-xl border border-slate-850 flex items-center justify-between gap-4 text-xs font-mono"
+                <div className="space-y-4 pt-4 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider font-mono" style={{ color: 'var(--text-muted)' }}>
+                    Project Milestones ({gigData.milestones.length})
+                  </h3>
+                  <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border-secondary)' }}>
+                    <table className="w-full text-left text-xs">
+                      <thead className="font-mono uppercase text-[10px]" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>
+                        <tr>
+                          <th className="p-3">#</th>
+                          <th className="p-3">Milestone</th>
+                          <th className="p-3">Due Date</th>
+                          <th className="p-3 text-right">Amount</th>
+                          <th className="p-3 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y" style={{ borderColor: 'var(--border-secondary)' }}>
+                        {gigData.milestones.map((m, idx) => (
+                          <tr key={m._id || idx}>
+                            <td className="p-3 font-mono" style={{ color: 'var(--text-muted)' }}>{idx + 1}</td>
+                            <td className="p-3 font-bold" style={{ color: 'var(--text-primary)' }}>{m.title}</td>
+                            <td className="p-3 font-mono" style={{ color: 'var(--text-secondary)' }}>
+                              {m.dueDate ? new Date(m.dueDate).toLocaleDateString() : 'Flexible'}
+                            </td>
+                            <td className="p-3 text-right font-bold" style={{ color: 'var(--accent-secondary)' }}>
+                              ${m.amount?.toLocaleString()}
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className="badge badge-green text-[10px] font-mono">
+                                {m.status || 'pending'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Attachments List */}
+              {gigData.attachments && gigData.attachments.length > 0 && (
+                <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider font-mono" style={{ color: 'var(--text-muted)' }}>
+                    Project Attachments
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {gigData.attachments.map((att, idx) => (
+                      <a
+                        key={idx}
+                        href={att.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="card p-3 flex items-center gap-2 text-xs no-underline hover:border-[var(--accent-primary)] transition-all"
+                        style={{ background: 'var(--bg-tertiary)' }}
                       >
-                        <div className="space-y-1">
-                          <span className="text-slate-200 font-bold block">{milestone.title}</span>
-                          {milestone.dueDate && (
-                            <span className="text-slate-500">Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
-                          )}
-                        </div>
-                        <div className="text-right space-y-1">
-                          <span className="text-indigo-400 font-bold block">${milestone.amount.toLocaleString()}</span>
-                          <span className="text-[10px] text-slate-400 uppercase bg-slate-800 px-2 py-0.5 rounded">
-                            {milestone.status}
-                          </span>
-                        </div>
-                      </div>
+                        <IconPaperclip className="w-4 h-4 text-[var(--accent-primary)]" />
+                        <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{att.name || `Attachment ${idx + 1}`}</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                      </a>
                     ))}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Client proposals viewing area */}
+            {/* Owner Section: Proposals & Recommendations Tabs */}
             {canSeeProposals && (
-              <div className="space-y-4">
-                {/* Tabs */}
-                <div className="flex border-b border-slate-800">
+              <div className="space-y-6">
+                <div className="flex border-b" style={{ borderColor: 'var(--border-secondary)' }}>
                   <button
                     onClick={() => setActiveTab('proposals')}
-                    className={`py-3 px-6 font-bold text-sm tracking-tight transition-all border-b-2 ${
+                    className={`py-3 px-6 font-bold text-sm transition-all border-b-2 cursor-pointer ${
                       activeTab === 'proposals'
-                        ? 'border-indigo-500 text-indigo-400'
-                        : 'border-transparent text-slate-400 hover:text-slate-200'
+                        ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
+                        : 'border-transparent text-gray-400 hover:text-gray-600'
                     }`}
                   >
                     Proposals Received ({proposalsData?.length || 0})
@@ -231,13 +327,13 @@ export default function GigDetail() {
                   {isOwner && (
                     <button
                       onClick={() => setActiveTab('recommendations')}
-                      className={`py-3 px-6 font-bold text-sm tracking-tight transition-all border-b-2 ${
+                      className={`py-3 px-6 font-bold text-sm transition-all border-b-2 cursor-pointer ${
                         activeTab === 'recommendations'
-                          ? 'border-indigo-500 text-indigo-400'
-                          : 'border-transparent text-slate-400 hover:text-slate-200'
+                          ? 'border-[var(--accent-primary)] text-[var(--accent-primary)] font-bold'
+                          : 'border-transparent text-gray-400 hover:text-gray-600'
                       }`}
                     >
-                      AI Recommended Freelancers ({recommendations?.length || 0})
+                      ★ Recommended Freelancers ({recommendations?.length || 0})
                     </button>
                   )}
                 </div>
@@ -247,8 +343,8 @@ export default function GigDetail() {
                 ) : (
                   <div className="space-y-4">
                     {recommendations?.length === 0 ? (
-                      <div className="text-center py-10 bg-slate-900/30 border border-slate-800 rounded-2xl">
-                        <p className="text-sm text-slate-400">No matching freelancers found near this location with matching skills.</p>
+                      <div className="card p-8 text-center" style={{ background: 'var(--bg-card)' }}>
+                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No recommended freelancers found matching this gig's required skills.</p>
                       </div>
                     ) : (
                       <div className="grid gap-4">
@@ -257,43 +353,33 @@ export default function GigDetail() {
                           const hasInvited = gigData.invitedFreelancers?.includes(fl._id) || inviteStatus[fl._id] === 'invited';
 
                           return (
-                            <div
-                              key={fl._id}
-                              className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-700 transition-colors"
-                            >
-                              <div className="flex items-center gap-3">
-                                <img
-                                  src={fl.avatarUrl || 'https://via.placeholder.com/150'}
-                                  alt={fl.name}
-                                  className="w-12 h-12 rounded-full border border-slate-800 object-cover"
-                                />
+                            <div key={fl._id} className="card p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-md text-lg shrink-0" style={{ background: 'var(--gradient-brand)' }}>
+                                  {fl.name?.charAt(0)?.toUpperCase()}
+                                </div>
                                 <div>
-                                  <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                                    {fl.name}
-                                    <span className="bg-indigo-500/10 text-indigo-400 font-mono text-[9px] font-black px-2 py-0.5 rounded-full border border-indigo-500/20">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{fl.name}</h4>
+                                    <span className="badge badge-gold text-[10px]">
                                       Match {Math.round(score * 100)}%
                                     </span>
-                                  </h4>
-                                  <p className="text-xs text-slate-400">{fl.freelancerProfile?.headline}</p>
-                                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                                    Rating: {fl.freelancerProfile?.reputationScore || 0}/5 • Rate: ${fl.freelancerProfile?.hourlyRate}/hr
-                                  </p>
+                                  </div>
+                                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{fl.freelancerProfile?.headline || 'Verified Local Freelancer'}</p>
+                                  <div className="flex items-center gap-3 mt-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                                    {renderStars(fl.freelancerProfile?.reputationScore || 5)}
+                                    <span>${fl.freelancerProfile?.hourlyRate || 35}/hr</span>
+                                  </div>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-2">
-                                <button
-                                  disabled={hasInvited || inviteMutation.isLoading}
-                                  onClick={() => inviteMutation.mutate(fl._id)}
-                                  className={`text-xs font-bold py-2 px-4 rounded-xl border transition-all ${
-                                    hasInvited
-                                      ? 'bg-slate-900 border-slate-850 text-slate-500 cursor-default'
-                                      : 'bg-indigo-600/10 hover:bg-indigo-600 border-indigo-500/30 text-indigo-400 hover:text-white'
-                                  }`}
-                                >
-                                  {hasInvited ? '✓ Invited' : 'Invite to Apply'}
-                                </button>
-                              </div>
+                              <button
+                                disabled={hasInvited || inviteMutation.isLoading}
+                                onClick={() => inviteMutation.mutate(fl._id)}
+                                className={`btn-primary text-xs shrink-0 ${hasInvited ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                {hasInvited ? '✓ Invited' : 'Invite Freelancer'}
+                              </button>
                             </div>
                           );
                         })}
@@ -301,13 +387,6 @@ export default function GigDetail() {
                     )}
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Render Milestone Tracker if Gig is Assigned */}
-            {gigData.assignedFreelancer && (
-              <div className="mt-6">
-                <MilestoneTracker gig={gigData} />
               </div>
             )}
 
@@ -331,8 +410,8 @@ export default function GigDetail() {
                         );
                       }
                       return (
-                        <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 text-center text-slate-400 text-xs">
-                          No accepted proposal found to review.
+                        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', borderRadius: 20, padding: 16 }} className="text-center text-xs" >
+                          <span style={{ color: 'var(--text-secondary)' }}>No accepted proposal found to review.</span>
                         </div>
                       );
                     })()}
@@ -350,8 +429,8 @@ export default function GigDetail() {
                         }}
                       />
                     ) : (
-                      <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 text-center text-slate-400 text-xs animate-pulse">
-                        Loading your proposal information for review...
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', borderRadius: 20, padding: 16 }} className="text-center text-xs animate-pulse">
+                        <span style={{ color: 'var(--text-secondary)' }}>Loading your proposal information for review...</span>
                       </div>
                     )}
                   </div>
@@ -363,60 +442,75 @@ export default function GigDetail() {
           {/* Context Sidebar Column */}
           <div className="lg:col-span-1 space-y-6">
             {/* Metadata Card */}
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm space-y-4 text-xs font-mono">
-              <h3 className="text-sm font-bold text-slate-350 uppercase tracking-wider block font-mono border-b border-slate-800 pb-2">Details</h3>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', borderRadius: 12, padding: 16 }} className="text-xs font-mono">
+                <h3 className="text-sm font-bold uppercase tracking-wider block font-mono" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-secondary)', paddingBottom: 8 }}>Details</h3>
               
-              <div className="space-y-3">
-                <div>
-                  <span className="text-slate-500 block">CLIENT</span>
-                  <span className="text-slate-200 font-bold text-sm capitalize">{gigData.client?.name}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">WORK LOCATION</span>
-                  <span className="text-slate-200 font-bold text-sm">
-                    {gigData.isRemoteOk ? '🌐 Remote OK' : `📍 ${gigData.location?.city || 'On-site'}`}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">BUDGET TYPE</span>
-                  <span className="text-slate-200 font-bold text-sm uppercase">{gigData.budgetType}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">DATE POSTED</span>
-                  <span className="text-slate-200 font-bold text-sm">
-                    {new Date(gigData.createdAt).toLocaleDateString()}
-                  </span>
+                <div className="space-y-3" style={{ marginTop: 8 }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>CLIENT</span>
+                    <span className="font-bold text-sm capitalize" style={{ color: 'var(--text-primary)' }}>{gigData.client?.name}</span>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>WORK LOCATION</span>
+                    <span className="font-bold text-sm" style={{ color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {gigData.isRemoteOk ? (
+                        <><IconGlobe className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} /> Remote OK</>
+                      ) : (
+                        <><IconMapPin className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} /> {gigData.location?.city || 'On-site'}</>
+                      )}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>BUDGET TYPE</span>
+                    <span className="font-bold text-sm uppercase" style={{ color: 'var(--text-primary)' }}>{gigData.budgetType}</span>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>DATE POSTED</span>
+                    <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      {new Date(gigData.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              {/* Start Conversation CTA */}
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', borderRadius: 12, padding: 12 }} className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold" style={{ color: 'var(--text-primary)', margin: 0 }}>Start Conversation</h4>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)', marginTop: 4 }}>Have a quick question? Message the client directly.</p>
+                </div>
+                <Link to="/messages" className="btn-primary text-xs flex items-center gap-2 no-underline">
+                  <MessageCircle className="w-4 h-4" /> Message
+                </Link>
+              </div>
 
             {/* Freelancer actions panel */}
             {user?.role === 'freelancer' && (
               <div className="space-y-4">
                 {hasSubmittedProposal ? (
-                  <div className="bg-slate-900/35 border border-indigo-950/60 p-6 rounded-2xl text-center space-y-2">
-                    <span className="text-2xl">✓</span>
-                    <h3 className="text-sm font-bold text-slate-250">Proposal Submitted</h3>
-                    <p className="text-xs text-slate-400">You have already submitted a proposal for this gig. You will be notified if the client initiates negotiations.</p>
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', borderRadius: 12, padding: 16 }} className="text-center space-y-2">
+                    <IconCheck className="mx-auto" style={{ width: 28, height: 28, color: 'var(--accent-primary)' }} />
+                    <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Proposal Submitted</h3>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>You have already submitted a proposal for this gig. You will be notified if the client initiates negotiations.</p>
                   </div>
                 ) : gigData.status !== 'open' ? (
-                  <div className="bg-slate-900/35 border border-slate-800 p-6 rounded-2xl text-center">
-                    <p className="text-xs text-slate-400">Applications are closed for this gig (Status: {gigData.status}).</p>
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', borderRadius: 12, padding: 16 }} className="text-center">
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Applications are closed for this gig (Status: {gigData.status}).</p>
                   </div>
                 ) : (
                   <>
                     {!showProposalForm ? (
                       <button
                         onClick={() => setShowProposalForm(true)}
-                        className="w-full text-center bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/10 hover:shadow-indigo-500/30 transition-all duration-300"
+                        className="btn-primary w-full text-xs font-bold py-3 px-4 rounded-xl transition-all duration-300"
                       >
-                        Apply for this Job
+                        <span className="flex items-center justify-center gap-2"><IconSend className="w-4 h-4" /> Apply for this Job</span>
                       </button>
                     ) : (
                       <div className="space-y-3">
                         <button
                           onClick={() => setShowProposalForm(false)}
-                          className="w-full text-center bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-bold py-2 px-4 rounded-xl border border-slate-700/80 transition-colors"
+                          className="btn-secondary w-full text-xs font-bold py-2 px-4 rounded-xl"
                         >
                           Cancel Proposal
                         </button>
@@ -437,8 +531,8 @@ export default function GigDetail() {
         </div>
       </main>
 
-      <footer className="border-t border-slate-800 bg-slate-900/30 py-6 text-center text-xs text-slate-500">
-        <p>© 2026 SkillSphere Hyperlocal Freelance Marketplace. All Rights Reserved.</p>
+      <footer style={{ borderTop: '1px solid var(--border-secondary)', background: 'var(--bg-primary)', paddingTop: 24, paddingBottom: 24 }} className="text-center text-xs">
+        <p style={{ color: 'var(--text-muted)' }}>© 2026 SkillSphere Hyperlocal Freelance Marketplace. All Rights Reserved.</p>
       </footer>
     </div>
   );

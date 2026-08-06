@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import NotificationBell from './common/NotificationBell.jsx';
 import ThemeToggle from './common/ThemeToggle.jsx';
+import { IconMenu, IconX } from './icons';
 
 export default function Navigation() {
   const navigate = useNavigate();
@@ -25,15 +26,17 @@ export default function Navigation() {
     }`;
 
   const linkStyle = (path) => ({
-    color: isActive(path) ? 'var(--accent-primary)' : 'var(--text-secondary)',
+    color: isActive(path) ? 'var(--accent-secondary)' : '#E5E5E0',
   });
 
   return (
     <nav
-      className="glass sticky top-0 z-50 px-6 py-3"
+      className="sticky top-0 z-50 px-6 py-3"
       style={{
-        borderBottom: '1px solid var(--border-secondary)',
+        background: 'var(--bg-nav)',
+        borderBottom: '1px solid #333333',
         boxShadow: 'var(--shadow-nav)',
+        color: '#FFFFFF',
       }}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -202,14 +205,9 @@ export default function Navigation() {
             onClick={() => setMobileOpen(!mobileOpen)}
             className="lg:hidden p-2 rounded-lg cursor-pointer"
             style={{ color: 'var(--text-secondary)' }}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              {mobileOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
+            {mobileOpen ? <IconX className="h-5 w-5" /> : <IconMenu className="h-5 w-5" />}
           </button>
         </div>
       </div>

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+import { IconPaperclip, IconSend, IconX } from '../icons';
+
 export default function MessageInput({ onSendMessage, onTyping, recipientId }) {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState([]);
@@ -98,8 +100,9 @@ export default function MessageInput({ onSendMessage, onTyping, recipientId }) {
                 type="button"
                 onClick={() => handleRemoveAttachment(idx)}
                 className="text-slate-500 hover:text-rose-400 font-bold ml-1 transition-colors cursor-pointer"
+                aria-label={`Remove attachment ${file.name}`}
               >
-                ✕
+                <IconX className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
@@ -114,10 +117,9 @@ export default function MessageInput({ onSendMessage, onTyping, recipientId }) {
           onClick={() => fileInputRef.current?.click()}
           className="p-3 text-slate-400 hover:text-indigo-400 bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-2xl transition-all cursor-pointer shrink-0"
           title="Attach file"
+          aria-label="Attach file"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-          </svg>
+          <IconPaperclip className="h-5 w-5" />
         </button>
 
         <input
@@ -141,10 +143,9 @@ export default function MessageInput({ onSendMessage, onTyping, recipientId }) {
         <button
           type="submit"
           className="p-3 text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl transition-all shadow-md shadow-indigo-600/20 hover:shadow-indigo-500/35 cursor-pointer shrink-0"
+          aria-label="Send message"
         >
-          <svg xmlns="http://www.w3.org/2500/svg" className="h-5 w-5 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
+          <IconSend className="h-5 w-5 rotate-90" />
         </button>
       </div>
     </form>

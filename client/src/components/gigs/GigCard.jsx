@@ -5,6 +5,7 @@ export default function GigCard({ gig, matchScore }) {
   const {
     _id,
     title,
+    description,
     budgetType,
     budgetMin,
     budgetMax,
@@ -17,6 +18,7 @@ export default function GigCard({ gig, matchScore }) {
 
   // Format posted date
   const timeAgo = (dateString) => {
+    if (!dateString) return 'recently';
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
@@ -24,80 +26,91 @@ export default function GigCard({ gig, matchScore }) {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 60) return `${Math.max(1, diffMins)}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
   };
 
+  const visibleSkills = requiredSkills.slice(0, 4);
+  const remainingSkills = requiredSkills.length - 4;
+
   return (
-    <div className="relative bg-slate-900/60 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-6 backdrop-blur-sm shadow-md hover:shadow-indigo-500/5 transition-all duration-300 flex flex-col justify-between group h-full">
-      {matchScore !== undefined && (
-        <div className="absolute -top-3 -right-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-mono text-xs font-black px-3 py-1 rounded-full shadow-lg border border-indigo-400">
-          Match: {Math.round(matchScore * 100)}%
+    <div className="card p-6 flex flex-col justify-between relative group no-underline" style={{ background: 'var(--bg-card)' }}>
+      {/* Match Score Badge */}
+      {matchScore !== undefined && matchScore !== null && (
+        <div className="absolute -top-3 right-4 badge badge-gold shadow-md text-xs font-bold font-mono">
+          ★ Match {Math.round(matchScore * 100)}%
         </div>
       )}
 
       <div>
-        <div className="flex justify-between items-start gap-4 mb-3">
-          <Link to={`/gigs/${_id}`}>
-            <h3 className="text-lg font-bold text-slate-100 hover:text-indigo-400 transition-colors line-clamp-1">
+        {/* Title */}
+        <div className="flex justify-between items-start gap-3 mb-2">
+          <Link to={`/gigs/${_id}`} className="no-underline">
+            <h3 className="text-base font-bold font-display hover:underline transition-colors leading-snug line-clamp-1" style={{ color: 'var(--text-primary)' }}>
               {title}
             </h3>
           </Link>
+          <span className="badge badge-green text-[10px] uppercase shrink-0">
+            {gig.status || 'open'}
+          </span>
         </div>
 
-        {/* Client Name & Time */}
-        <div className="flex items-center gap-2 text-xs text-slate-500 mb-4">
-          <span className="font-semibold text-slate-400">{client.name || 'Anonymous Client'}</span>
+        {/* Client info & time */}
+        <div className="flex items-center gap-2 text-xs mb-3 font-mono" style={{ color: 'var(--text-muted)' }}>
+          <span style={{ color: 'var(--text-secondary)' }}>{client.name || 'Verified Client'}</span>
           <span>•</span>
           <span>{timeAgo(createdAt)}</span>
         </div>
 
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 mb-6">
-          {requiredSkills.map((skill, idx) => (
-            <span
-              key={idx}
-              className="text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700/60 px-2 py-0.5 rounded-md hover:bg-slate-700 hover:text-white transition-colors"
-            >
+        {/* Description preview (2 lines) */}
+        <p className="text-xs line-clamp-2 mb-4 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+          {description}
+        </p>
+
+        {/* Required Skills tags */}
+        <div className="flex flex-wrap gap-1.5 mb-5">
+          {visibleSkills.map((skill, idx) => (
+            <span key={idx} className="badge badge-green text-[10px]">
               {skill}
             </span>
           ))}
+          {remainingSkills > 0 && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>
+              +{remainingSkills} more
+            </span>
+          )}
         </div>
       </div>
 
+      {/* Footer details */}
       <div>
-        {/* Budget and Location Details */}
-        <div className="border-t border-slate-800/80 pt-4 flex items-center justify-between">
+        <div className="pt-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--border-secondary)' }}>
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-slate-500 block font-mono">
-              Budget ({budgetType})
-            </span>
-            <span className="text-sm font-bold text-indigo-400">
-              ${budgetMin.toLocaleString()}
+            <span className="text-[10px] uppercase font-mono block" style={{ color: 'var(--text-muted)' }}>Budget</span>
+            <span className="text-sm font-extrabold font-display" style={{ color: 'var(--accent-secondary)' }}>
+              ${budgetMin?.toLocaleString()}
               {budgetMax ? ` - $${budgetMax.toLocaleString()}` : '+'}
               {budgetType === 'hourly' && '/hr'}
             </span>
           </div>
 
           <div className="text-right">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500 block font-mono">
-              Location
-            </span>
-            <span className="text-xs font-semibold text-slate-300">
-              {isRemoteOk ? '🌐 Remote OK' : `📍 ${location?.city || 'On-site'}`}
+            <span className="text-[10px] uppercase font-mono block" style={{ color: 'var(--text-muted)' }}>Location</span>
+            <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              {isRemoteOk ? '🌐 Remote OK' : `📍 ${location?.city || 'Hyperlocal'}`}
             </span>
           </div>
         </div>
 
-        {/* Action Button */}
         <Link
           to={`/gigs/${_id}`}
-          className="mt-4 w-full block text-center bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white text-xs font-bold py-2 px-4 rounded-xl border border-slate-700/80 hover:border-indigo-500 transition-all duration-300"
+          className="mt-4 w-full block text-center btn-primary text-xs no-underline py-2.5"
         >
-          View Details
+          View Details →
         </Link>
       </div>
     </div>
   );
 }
+
