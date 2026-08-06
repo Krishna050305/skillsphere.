@@ -463,5 +463,5 @@ The build plan, data model decisions, AI matching rationale, and escrow state ma
 ---
 
 <div align="center">
-<sub>Built by a second-year CS student at PICT, Pune · Nayoda Internship 2026</sub>
+<sub>Built by a third-year IT student at PICT, Pune · Nayoda Internship 2026</sub>
 </div>
